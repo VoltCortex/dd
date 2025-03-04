@@ -1,0 +1,337 @@
+local Players = game:GetService("Players")
+local UserInputService = game:GetService("UserInputService")
+local RunService = game:GetService("RunService")
+local TweenService = game:GetService("TweenService")
+
+local player = Players.LocalPlayer
+local playerGui = player:WaitForChild("PlayerGui")
+
+-- Create ScreenGui
+local screenGui = Instance.new("ScreenGui")
+screenGui.Name = "HitboxExtenderGui"
+screenGui.ResetOnSpawn = false
+screenGui.Parent = playerGui
+
+-- Create main frame
+local mainFrame = Instance.new("Frame")
+mainFrame.Size = UDim2.new(0, 300, 0, 400)
+mainFrame.Position = UDim2.new(0.5, -150, 0.5, -200)
+mainFrame.BackgroundColor3 = Color3.new(0.5, 0.5, 0.5)
+mainFrame.BackgroundTransparency = 0.4
+mainFrame.Parent = screenGui
+
+-- Add round corners to main frame
+local uiCorner = Instance.new("UICorner")
+uiCorner.CornerRadius = UDim.new(0, 10)
+uiCorner.Parent = mainFrame
+
+-- Create exit button
+local exitButton = Instance.new("TextButton")
+exitButton.Size = UDim2.new(0, 30, 0, 30)
+exitButton.Position = UDim2.new(1, -35, 0, 5)
+exitButton.Text = "X"
+exitButton.TextColor3 = Color3.new(1, 1, 1)
+exitButton.BackgroundColor3 = Color3.new(0.8, 0.2, 0.2)
+exitButton.Parent = mainFrame
+
+-- Add round corners to exit button
+local exitButtonCorner = Instance.new("UICorner")
+exitButtonCorner.CornerRadius = UDim.new(0, 5)
+exitButtonCorner.Parent = exitButton
+
+-- Create hitbox extender toggle button
+local toggleButton = Instance.new("TextButton")
+toggleButton.Size = UDim2.new(0, 150, 0, 30)
+toggleButton.Position = UDim2.new(0.5, -75, 0.2, 0)
+toggleButton.Text = "Hitbox Extender: OFF"
+toggleButton.TextColor3 = Color3.new(1, 1, 1)
+toggleButton.BackgroundColor3 = Color3.new(0.2, 0.6, 0.2)
+toggleButton.Parent = mainFrame
+
+-- Create size input box
+local sizeInput = Instance.new("TextBox")
+sizeInput.Size = UDim2.new(0, 150, 0, 30)
+sizeInput.Position = UDim2.new(0.5, -75, 0.3, 0)
+sizeInput.Text = "1"
+sizeInput.PlaceholderText = "Enter hitbox size"
+sizeInput.TextColor3 = Color3.new(1, 1, 1)
+sizeInput.BackgroundColor3 = Color3.new(0.3, 0.3, 0.3)
+sizeInput.Parent = mainFrame
+
+-- Create player name input box
+local playerNameInput = Instance.new("TextBox")
+playerNameInput.Size = UDim2.new(0, 150, 0, 30)
+playerNameInput.Position = UDim2.new(0.5, -75, 0.5, 0)
+playerNameInput.Text = ""
+playerNameInput.PlaceholderText = "Click to select player"
+playerNameInput.TextColor3 = Color3.new(1, 1, 1)
+playerNameInput.BackgroundColor3 = Color3.new(0.3, 0.3, 0.3)
+playerNameInput.Parent = mainFrame
+
+-- Create player list frame
+local playerListFrame = Instance.new("Frame")
+playerListFrame.Size = UDim2.new(0, 150, 0, 200)
+playerListFrame.Position = UDim2.new(0.5, -75, 0.5, 35)
+playerListFrame.BackgroundColor3 = Color3.new(0.2, 0.2, 0.2)
+playerListFrame.BorderSizePixel = 2
+playerListFrame.Visible = false
+playerListFrame.Parent = mainFrame
+
+local playerScrollingFrame = Instance.new("ScrollingFrame")
+playerScrollingFrame.Size = UDim2.new(1, -4, 1, -4)
+playerScrollingFrame.Position = UDim2.new(0, 2, 0, 2)
+playerScrollingFrame.BackgroundTransparency = 1
+playerScrollingFrame.ScrollBarThickness = 6
+playerScrollingFrame.Parent = playerListFrame
+
+local playerListLayout = Instance.new("UIListLayout")
+playerListLayout.Parent = playerScrollingFrame
+playerListLayout.SortOrder = Enum.SortOrder.Name
+playerListLayout.Padding = UDim.new(0, 2)
+
+-- Create teleport button
+local teleportButton = Instance.new("TextButton")
+teleportButton.Size = UDim2.new(0, 70, 0, 30)
+teleportButton.Position = UDim2.new(0.25, -35, 0.6, 0)
+teleportButton.Text = "Teleport"
+teleportButton.TextColor3 = Color3.new(1, 1, 1)
+teleportButton.BackgroundColor3 = Color3.new(0.2, 0.4, 0.8)
+teleportButton.Parent = mainFrame
+
+-- Create spectate button
+local spectateButton = Instance.new("TextButton")
+spectateButton.Size = UDim2.new(0, 70, 0, 30)
+spectateButton.Position = UDim2.new(0.75, -35, 0.6, 0)
+spectateButton.Text = "Spectate"
+spectateButton.TextColor3 = Color3.new(1, 1, 1)
+spectateButton.BackgroundColor3 = Color3.new(0.8, 0.4, 0.2)
+spectateButton.Parent = mainFrame
+
+-- Make the frame draggable
+local dragging
+local dragInput
+local dragStart
+local startPos
+
+local function update(input)
+    local delta = input.Position - dragStart
+    mainFrame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+end
+
+mainFrame.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+        dragging = true
+        dragStart = input.Position
+        startPos = mainFrame.Position
+
+        input.Changed:Connect(function()
+            if input.UserInputState == Enum.UserInputState.End then
+                dragging = false
+            end
+        end)
+    end
+end)
+
+mainFrame.InputChanged:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
+        dragInput = input
+    end
+end)
+
+UserInputService.InputChanged:Connect(function(input)
+    if input == dragInput and dragging then
+        update(input)
+    end
+end)
+
+-- Hitbox extender function
+local function updateHitboxes(enabled)
+    local size = tonumber(sizeInput.Text) or 1
+    for _, otherPlayer in ipairs(Players:GetPlayers()) do
+        if otherPlayer ~= player and otherPlayer.Character and otherPlayer.Character:FindFirstChild("HumanoidRootPart") then
+            local hitbox = otherPlayer.Character.HumanoidRootPart
+            if enabled then
+                hitbox.Size = Vector3.new(size, size, size)
+                hitbox.Transparency = 0.5
+                hitbox.CanCollide = false
+                hitbox.CustomPhysicalProperties = PhysicalProperties.new(0, 0, 0, 0, 0)
+            else
+                hitbox.Size = Vector3.new(2, 2, 1)
+                hitbox.Transparency = 1
+                hitbox.CanCollide = true
+                hitbox.CustomPhysicalProperties = PhysicalProperties.new(0.7, 0, 0.3, 1, 100)
+            end
+        end
+    end
+end
+
+-- Toggle button functionality
+local hitboxExtenderEnabled = false
+toggleButton.MouseButton1Click:Connect(function()
+    hitboxExtenderEnabled = not hitboxExtenderEnabled
+    toggleButton.Text = hitboxExtenderEnabled and "Hitbox Extender: ON" or "Hitbox Extender: OFF"
+    toggleButton.BackgroundColor3 = hitboxExtenderEnabled and Color3.new(0.2, 0.8, 0.2) or Color3.new(0.2, 0.6, 0.2)
+    updateHitboxes(hitboxExtenderEnabled)
+end)
+
+-- Size input functionality
+sizeInput.FocusLost:Connect(function(enterPressed)
+    if enterPressed and hitboxExtenderEnabled then
+        updateHitboxes(true)
+    end
+end)
+
+-- Update hitboxes every 2 seconds
+local updateLoop
+local function startUpdateLoop()
+    updateLoop = RunService.Heartbeat:Connect(function()
+        if hitboxExtenderEnabled then
+            updateHitboxes(true)
+        end
+        wait(2)  -- Wait for 2 seconds before the next update
+    end)
+end
+
+local function stopUpdateLoop()
+    if updateLoop then
+        updateLoop:Disconnect()
+        updateLoop = nil
+    end
+end
+
+startUpdateLoop()
+
+-- Fade in/out functionality
+local isVisible = true
+local tweenInfo = TweenInfo.new(0.5, Enum.EasingStyle.Quad, Enum.EasingDirection.InOut)
+
+local function fadeGui(visible)
+    local targetTransparency = visible and 0 or 1
+    local tween = TweenService:Create(mainFrame, tweenInfo, {BackgroundTransparency = targetTransparency + 0.4})
+    tween:Play()
+    
+    for _, child in pairs(mainFrame:GetChildren()) do
+        if child:IsA("GuiObject") then
+            local childTween = TweenService:Create(child, tweenInfo, {BackgroundTransparency = targetTransparency})
+            childTween:Play()
+            if child:IsA("TextButton") or child:IsA("TextBox") or child:IsA("TextLabel") then
+                local textTween = TweenService:Create(child, tweenInfo, {TextTransparency = targetTransparency})
+                textTween:Play()
+            end
+        end
+    end
+end
+
+UserInputService.InputBegan:Connect(function(input, gameProcessed)
+    if input.KeyCode == Enum.KeyCode.V and not gameProcessed then
+        isVisible = not isVisible
+        fadeGui(isVisible)
+    end
+end)
+
+-- Function to update player list
+local function updatePlayerList()
+    for _, child in pairs(playerScrollingFrame:GetChildren()) do
+        if child:IsA("TextButton") then
+            child:Destroy()
+        end
+    end
+    
+    for _, plr in ipairs(Players:GetPlayers()) do
+        local playerButton = Instance.new("TextButton")
+        playerButton.Size = UDim2.new(1, -4, 0, 30)
+        playerButton.Text = plr.Name
+        playerButton.TextColor3 = Color3.new(1, 1, 1)
+        playerButton.BackgroundColor3 = Color3.new(0.3, 0.3, 0.3)
+        playerButton.Parent = playerScrollingFrame
+        
+        playerButton.MouseButton1Click:Connect(function()
+            playerNameInput.Text = plr.Name
+            playerListFrame.Visible = false
+        end)
+    end
+    
+    playerScrollingFrame.CanvasSize = UDim2.new(0, 0, 0, playerListLayout.AbsoluteContentSize.Y)
+end
+
+-- Show player list when clicking on the input box
+playerNameInput.Focused:Connect(function()
+    updatePlayerList()
+    playerListFrame.Visible = true
+end)
+
+-- Hide player list when clicking outside
+UserInputService.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+        local mousePosition = UserInputService:GetMouseLocation()
+        local framePosition = playerListFrame.AbsolutePosition
+        local frameSize = playerListFrame.AbsoluteSize
+        
+        if mousePosition.X < framePosition.X or mousePosition.X > framePosition.X + frameSize.X or
+           mousePosition.Y < framePosition.Y or mousePosition.Y > framePosition.Y + frameSize.Y then
+            playerListFrame.Visible = false
+        end
+    end
+end)
+
+-- Update player list every 5 seconds
+spawn(function()
+    while wait(5) do
+        if playerListFrame.Visible then
+            updatePlayerList()
+        end
+    end
+end)
+
+-- Teleport functionality
+teleportButton.MouseButton1Click:Connect(function()
+    local targetPlayer = Players:FindFirstChild(playerNameInput.Text)
+    if targetPlayer and targetPlayer.Character and targetPlayer.Character:FindFirstChild("HumanoidRootPart") then
+        player.Character:SetPrimaryPartCFrame(targetPlayer.Character.HumanoidRootPart.CFrame)
+    end
+end)
+
+-- Spectate functionality
+local currentlySpectating = nil
+
+local function stopSpectating()
+    if currentlySpectating then
+        workspace.CurrentCamera.CameraSubject = player.Character
+        currentlySpectating = nil
+    end
+end
+
+spectateButton.MouseButton1Click:Connect(function()
+    local targetPlayer = Players:FindFirstChild(playerNameInput.Text)
+    if targetPlayer and targetPlayer.Character and targetPlayer.Character:FindFirstChild("Humanoid") then
+        if currentlySpectating == targetPlayer then
+            stopSpectating()
+            spectateButton.Text = "Spectate"
+        else
+            stopSpectating()
+            workspace.CurrentCamera.CameraSubject = targetPlayer.Character
+            currentlySpectating = targetPlayer
+            spectateButton.Text = "Stop Spectating"
+        end
+    end
+end)
+
+-- Stop spectating when the player respawns
+player.CharacterAdded:Connect(stopSpectating)
+
+-- Exit button functionality
+exitButton.MouseButton1Click:Connect(function()
+    hitboxExtenderEnabled = false
+    updateHitboxes(false)
+    stopUpdateLoop()
+    stopSpectating()
+    screenGui:Destroy()
+end)
+
+-- Clean up when the script is destroyed
+screenGui.Destroying:Connect(function()
+    hitboxExtenderEnabled = false
+    updateHitboxes(false)
+    stopUpdateLoop()
+    stopSpectating()
+end)
